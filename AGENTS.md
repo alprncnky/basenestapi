@@ -13,76 +13,8 @@
 
 Use three powerful decorators to eliminate all repetitive code:
 - `@AutoEntity()` - Entities with zero boilerplate
-- `@AutoApplyDecorators('DtoName')` - Input DTOs with automatic validation
-- `@AutoResponse('ResponseName')` - Response DTOs with automatic mapping + Swagger
-
-## Quick Start: The Decorator-First Approach
-
-This is the **SIMPLEST** way to build your API. Just define properties and add decorators:
-
-```typescript
-// 1️⃣ Entity - No constructor needed!
-@AutoEntity()
-export class User {
-  id: number;
-  name: string;
-  email: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// 2️⃣ Input DTO - Validation from mapping
-@AutoApplyDecorators(CreateUserMapping)
-export class CreateUserDto extends BaseCreateDto {
-  name: string;
-  email: string;
-}
-
-// 3️⃣ Response DTO - Auto-mapping + Swagger
-@AutoResponse(UserResponseMapping)
-export class UserResponseDto extends BaseResponseDto {
-  name: string;
-  email: string;
-}
-
-// 4️⃣ Mappings (per-module in dto/mapping.ts)
-export const CreateUserMapping = {
-  name: () => StringField('User name', 'John Doe'),
-  email: () => EmailField('User email', 'john@example.com'),
-};
-
-// In responses/mapping.ts
-export const UserResponseMapping: Record<string, ResponseFieldConfig> = {
-  name: { description: 'User name', example: 'John Doe', required: true, type: String },
-  email: { description: 'User email', example: 'john@example.com', required: true, type: String },
-};
-
-// 5️⃣ Service - Focus on business logic
-@Injectable()
-export class UsersService {
-  async create(dto: CreateUserDto): Promise<User> {
-    await this.validateUser(dto);
-    
-    // @AutoEntity makes this simple!
-    const user = new User({
-      ...dto,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    
-    return await this.usersRepository.save(user);
-  }
-}
-
-// 6️⃣ Controller - Automatic CRUD
-@CrudController('users', 'User')
-export class UsersController extends BaseController<...> {
-  @CreateEndpoint('User', UserResponseDto)
-  create(@Body() createDto: CreateUserDto) {
-    return this.createEntity(createDto);
-  }
-}
-```
+- `@AutoApplyDecorators(mapping)` - Input DTOs with automatic validation
+- `@AutoResponse(mapping)` - Response DTOs with automatic mapping + Swagger
 
 **Result**: Full CRUD API with validation, error handling, Swagger docs, and type safety - all automatic!
 
@@ -518,45 +450,7 @@ export class User {
 // Benefits: TypeORM database mapping + automatic object mapping!
 ```
 
-**Repository Usage:**
-```typescript
-@Injectable()
-export class UsersService {
-  constructor(
-    @InjectRepository(User)
-    private readonly usersRepository: Repository<User>,
-  ) {}
-  
-  async findAll(): Promise<User[]> {
-    return await this.usersRepository.find();
-  }
-  
-  async findOne(id: number): Promise<User> {
-    const user = await this.usersRepository.findOne({ where: { id } });
-    if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
-    }
-    return user;
-  }
-  
-  async findByRole(role: string): Promise<User[]> {
-    return await this.usersRepository
-      .createQueryBuilder('user')
-      .where('user.role = :role', { role })
-      .getMany();
-  }
-  
-  async create(data: Partial<User>): Promise<User> {
-    // @AutoEntity makes this simple
-    const user = new User({
-      ...data,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    return await this.usersRepository.save(user);
-  }
-}
-```
+**Repository Usage:** Inject with `@InjectRepository(Entity)`, use methods: `find()`, `findOne()`, `save()`, `remove()`, `createQueryBuilder()`
 
 ### 10. Layer Responsibilities
 
@@ -645,426 +539,55 @@ import { PaymentStatusType } from '../enums/payment-status.enum';
 
 ## Development Checklist
 
-### When Adding New Feature (Ultra-Simple Pattern):
+### When Adding New Feature:
 
-#### Step 1: Create Enums (if needed)
-**File:** `modules/[feature]/enums/[feature-status].enum.ts`
-```typescript
-/**
- * Product status enum
- * Naming convention: [Feature][Purpose]Type
- */
-export enum ProductStatusType {
-  DRAFT = 'draft',
-  ACTIVE = 'active',
-  ARCHIVED = 'archived',
-}
-```
+1. **Create Enums** (if needed): `modules/[feature]/enums/[name].enum.ts` with `Type` suffix (e.g., `PaymentStatusType`)
+2. **Create Entity**: Add `@AutoEntity()` decorator, define properties only
+3. **Create Field Mappings**: `dto/mapping.ts` with validation configs
+4. **Create Input DTOs**: Add `@AutoApplyDecorators(mapping)`, extend `BaseCreateDto`/`BaseUpdateDto`
+5. **Create Response Mappings**: `responses/mapping.ts` with Swagger configs
+6. **Create Response DTOs**: Add `@AutoResponse(mapping)`, extend `BaseResponseDto`
+7. **Create List Response**: Extend `BaseListResponseDto<T>` (empty class)
+8. **Create Service**: Implement business logic with validation
+9. **Create Controller**: Extend `BaseController`, use endpoint decorators
+10. **Create Module**: Register entity, controller, service
+11. **Register in AppModule**: Import the new module
+12. **Test**: Run `npm run start:dev` and verify in Swagger
 
-**Important:** 
-- All enum names must end with `Type` suffix
-- Use PascalCase for enum names (e.g., `PaymentStatusType`, `UserRoleType`)
-- Store enums in the `enums/` folder within the module
-
-#### Step 2: Create Entity
-**File:** `modules/[feature]/entities/[feature].entity.ts`
-```typescript
-import { AutoEntity } from '../../../common/decorators/auto-entity.decorator';
-import { ProductStatusType } from '../enums/product-status.enum';
-
-@AutoEntity()
-export class Product {
-  id: number;
-  name: string;
-  description?: string;
-  price: number;
-  category: string;
-  status: ProductStatusType;
-  createdAt: Date;
-  updatedAt: Date;
-}
-```
-
-**That's it! No constructor needed.**
-
-#### Step 3: Create Mappings
-**File:** `modules/[feature]/dto/mapping.ts`
-```typescript
-import { StringField, NumberField } from '../../../common/decorators/field.decorator';
-
-export const CreateProductMapping = {
-  name: () => StringField('Product name', 'Laptop', true),
-  description: () => StringField('Product description', 'High-performance laptop', false),
-  price: () => NumberField('Product price', 999.99, true, 0.01),
-  category: () => StringField('Product category', 'Electronics', true),
-};
-
-export const UpdateProductMapping = {
-  name: () => StringField('Product name', 'Laptop', false),
-  description: () => StringField('Product description', 'High-performance laptop', false),
-  price: () => NumberField('Product price', 999.99, false, 0.01),
-  category: () => StringField('Product category', 'Electronics', false),
-};
-```
-
-#### Step 4: Create Input DTOs
-**File:** `modules/[feature]/dto/create-[feature].dto.ts`
-```typescript
-import { BaseCreateDto } from '../../../common/base/base-dto';
-import { AutoApplyDecorators } from '../../../common/decorators/auto-apply.decorator';
-import { CreateProductMapping } from './mapping';
-
-@AutoApplyDecorators(CreateProductMapping)
-export class CreateProductDto extends BaseCreateDto {
-  name: string;
-  description?: string;
-  price: number;
-  category: string;
-}
-```
-
-**File:** `modules/[feature]/dto/update-[feature].dto.ts`
-```typescript
-import { BaseUpdateDto } from '../../../common/base/base-dto';
-import { AutoApplyDecorators } from '../../../common/decorators/auto-apply.decorator';
-import { UpdateProductMapping } from './mapping';
-
-@AutoApplyDecorators(UpdateProductMapping)
-export class UpdateProductDto extends BaseUpdateDto {
-  name?: string;
-  description?: string;
-  price?: number;
-  category?: string;
-}
-```
-
-#### Step 5: Create Response Mappings
-**File:** `modules/[feature]/responses/mapping.ts`
-```typescript
-import { ResponseFieldConfig } from '../../../common/decorators/auto-response.decorator';
-
-export const ProductResponseMapping: Record<string, ResponseFieldConfig> = {
-  name: { description: 'Product name', example: 'Laptop', required: true, type: String },
-  description: { description: 'Product description', example: 'High-performance laptop', required: false, type: String },
-  price: { description: 'Product price', example: 999.99, required: true, type: Number },
-  category: { description: 'Product category', example: 'Electronics', required: true, type: String },
-};
-```
-
-#### Step 6: Create Response DTOs
-**File:** `modules/[feature]/responses/[feature]-response.dto.ts`
-```typescript
-import { BaseResponseDto } from '../../../common/base/base-dto';
-import { AutoResponse } from '../../../common/decorators/auto-response.decorator';
-import { ProductResponseMapping } from './mapping';
-
-@AutoResponse(ProductResponseMapping)
-export class ProductResponseDto extends BaseResponseDto {
-  name: string;
-  description?: string;
-  price: number;
-  category: string;
-}
-```
-
-**File:** `modules/[feature]/responses/[feature]-list-response.dto.ts`
-```typescript
-import { BaseListResponseDto } from '../../../common/base/base-dto';
-import { ProductResponseDto } from './product-response.dto';
-
-/**
- * Response DTO for product list
- * Simply extends BaseListResponseDto - no constructor needed!
- */
-export class ProductListResponseDto extends BaseListResponseDto<ProductResponseDto> {}
-```
-
-**That's it! No constructor boilerplate needed.**
-
-#### Step 7: Create Service
-**File:** `modules/[feature]/[feature].service.ts`
-```typescript
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Product } from './entities/product.entity';
-import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
-
-@Injectable()
-export class ProductsService {
-  constructor(
-    @InjectRepository(Product)
-    private readonly productsRepository: Repository<Product>,
-  ) {}
-  
-  async create(dto: CreateProductDto): Promise<Product> {
-    // 1. Validation
-    await this.validateProduct(dto);
-    
-    // 2. Business logic - @AutoEntity handles mapping!
-    const product = new Product({
-      ...dto,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    
-    // 3. Save
-    return await this.productsRepository.save(product);
-  }
-  
-  async findAll(): Promise<Product[]> {
-    return await this.productsRepository.find();
-  }
-  
-  async findOne(id: number): Promise<Product> {
-    const product = await this.productsRepository.findOne({ where: { id } });
-    if (!product) {
-      throw new NotFoundException(`Product with ID ${id} not found`);
-    }
-    return product;
-  }
-  
-  async update(id: number, dto: UpdateProductDto): Promise<Product> {
-    const product = await this.findOne(id);
-    
-    // @AutoEntity handles mapping
-    const updated = new Product({
-      ...product,
-      ...dto,
-      updatedAt: new Date(),
-    });
-    
-    return await this.productsRepository.save(updated);
-  }
-  
-  async remove(id: number): Promise<void> {
-    const product = await this.findOne(id);
-    await this.productsRepository.remove(product);
-  }
-  
-  private async validateProduct(dto: CreateProductDto): Promise<void> {
-    if (dto.price <= 0) {
-      throw new BadRequestException('Price must be positive');
-    }
-    // Add more business validation as needed
-  }
-}
-```
-
-#### Step 8: Create Controller
-**File:** `modules/[feature]/[feature].controller.ts`
-```typescript
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
-import { CrudController } from '../../common/decorators/crud-controller.decorator';
-import { BaseController } from '../../common/base/base-controller';
-import { CreateEndpoint, GetAllEndpoint, GetByIdEndpoint, UpdateEndpoint, DeleteEndpoint } from '../../common/decorators/endpoint.decorator';
-import { ProductsService } from './products.service';
-import { Product } from './entities/product.entity';
-import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
-import { ProductResponseDto } from './responses/product-response.dto';
-import { ProductListResponseDto } from './responses/product-list-response.dto';
-
-@CrudController('products', 'Product')
-export class ProductsController extends BaseController<
-  Product,
-  CreateProductDto,
-  UpdateProductDto,
-  ProductResponseDto,
-  ProductListResponseDto
-> {
-  constructor(private readonly productsService: ProductsService) {
-    super(productsService);
-  }
-  
-  // Implement abstract methods
-  protected getResponseClass = () => ProductResponseDto;
-  protected getListResponseClass = () => ProductListResponseDto;
-  protected getEntityName = () => 'Product';
-  
-  // Standard CRUD endpoints using base class methods
-  @CreateEndpoint('Product', ProductResponseDto)
-  create(@Body() createDto: CreateProductDto) {
-    return this.createEntity(createDto);
-  }
-  
-  @GetAllEndpoint('Product', ProductListResponseDto)
-  findAll() {
-    return this.findAllEntities();
-  }
-  
-  @GetByIdEndpoint('Product', ProductResponseDto)
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.findOneEntity(id);
-  }
-  
-  @UpdateEndpoint('Product', ProductResponseDto)
-  update(@Param('id', ParseIntPipe) id: number, @Body() updateDto: UpdateProductDto) {
-    return this.updateEntity(id, updateDto);
-  }
-  
-  @DeleteEndpoint('Product')
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.removeEntity(id);
-  }
-}
-```
-
-#### Step 9: Create Module
-**File:** `modules/[feature]/[feature].module.ts`
-```typescript
-import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { ProductsController } from './products.controller';
-import { ProductsService } from './products.service';
-import { Product } from './entities/product.entity';
-
-@Module({
-  imports: [TypeOrmModule.forFeature([Product])],
-  controllers: [ProductsController],
-  providers: [ProductsService],
-  exports: [ProductsService],
-})
-export class ProductsModule {}
-```
-
-#### Step 10: Register Module
-**File:** `app.module.ts`
-```typescript
-import { ProductsModule } from './modules/products/products.module';
-
-@Module({
-  imports: [
-    // ... other imports
-    ProductsModule,
-  ],
-})
-export class AppModule {}
-```
-
-#### Step 11: Test
-1. Run the app: `npm run start:dev`
-2. Open Swagger: `http://localhost:3000/api/docs`
-3. Test all CRUD endpoints
-
-### Summary: What You Wrote vs What You Got
-
-**You wrote:**
-- Entity: Just properties + `@AutoEntity()` decorator
-- DTOs: Just properties + `@AutoApplyDecorators(mapping)` decorator
-- Response: Just properties + `@AutoResponse(mapping)` decorator
-- List Response: Empty class extending `BaseListResponseDto<T>` (no constructor!)
-- Mappings: Simple objects in `dto/mapping.ts` and `responses/mapping.ts`
-- Service: Business logic only
-- Controller: Endpoint definitions using base class
-
-**You got automatically:**
-- ✅ Full constructor mapping for entities
-- ✅ Validation decorators on all DTO fields
-- ✅ Swagger documentation for all endpoints
-- ✅ Entity-to-DTO transformation
-- ✅ Error handling and response formatting
-- ✅ Type safety throughout
+**See Core Principles section above for detailed code examples.**
 
 ### Code Quality Standards:
 
-**Performance & Scalability:**
 - **Async/Await**: All repository and service methods must be async
-- **Query Optimization**: Use QueryBuilder for complex queries, avoid N+1 problems
-- **Pagination**: Implement pagination for list operations
-- **Indexing**: Add database indexes for commonly queried fields
-
-**Validation & Error Handling:**
-- **Validation First**: Validate all inputs before any business logic
+- **Validation First**: Validate all inputs before business logic
 - **Structured Errors**: Use NestJS built-in exceptions with descriptive messages
-- **Business Rules**: Implement domain validation in service layer
-- **Error Codes**: Consider adding error codes for client handling
-
-**Security & Authorization:**
-- **Guards**: Apply auth guards at controller or method level
-- **Input Sanitization**: Validate and sanitize all user inputs
-- **CORS**: Configure CORS appropriately for production
-
-**Code Organization:**
-- **Separation of Concerns**: Controllers handle HTTP, Services handle business, Repositories handle data
-- **Single Responsibility**: Each class/method should have one clear purpose
-- **DRY Principle**: Use base classes and utilities to avoid repetition
-- **Consistent Naming**: Follow established naming conventions
-  - Enums: `[Feature][Purpose]Type` (e.g., `PaymentStatusType`, `UserRoleType`)
-  - Files: `[kebab-case].enum.ts` for enums
-  - Folder: Store enums in `enums/` folder within each module
+- **Separation of Concerns**: Controllers (HTTP) → Services (business) → Repositories (data)
+- **Single Responsibility**: Each class/method has one clear purpose
 - **Type Safety**: Leverage TypeScript for compile-time checking
+- **Naming Convention**: Enums use `Type` suffix (e.g., `PaymentStatusType`)
 
 ## Best Practices
 
 ### DO: ✅
 
-**Use Decorators for Everything:**
-✅ Use `@AutoEntity()` on all entities - no manual constructors  
-✅ Use `@AutoApplyDecorators(mapping)` and `@AutoResponse(mapping)` for all DTOs  
-✅ List response DTOs: Just extend `BaseListResponseDto<T>` - empty class, no constructor!  
-✅ Define mappings per-module in `dto/mapping.ts` and `responses/mapping.ts`  
-✅ Store enums in `enums/` folder with `Type` suffix (e.g., `PaymentStatusType`)  
-
-**Architecture Patterns:**
-✅ Extend BaseController for standard CRUD operations  
-✅ Keep controllers thin - only route definitions and delegations  
-✅ Keep services focused on business logic and validation  
-✅ Return entities from services, transform to DTOs in controllers  
+✅ Use `@AutoEntity()`, `@AutoApplyDecorators(mapping)`, `@AutoResponse(mapping)` on all classes  
+✅ Extend base classes: `BaseController`, `BaseResponseDto`, `BaseListResponseDto<T>`  
+✅ Keep controllers thin - delegate to services  
+✅ Services return entities, controllers transform to DTOs  
+✅ Validate business rules in service layer before operations  
 ✅ Use constructor injection with `private readonly` pattern  
-
-**Code Quality:**
-✅ Use TypeScript generics for type safety  
-✅ Leverage global pipes, filters, and interceptors  
-✅ Group related functionality in modules  
-✅ Throw NestJS built-in exceptions (NotFoundException, BadRequestException, etc.)  
-✅ Validate business rules in service layer private methods  
-✅ Use async/await for all database operations  
-
-**Documentation:**
-✅ Centralize Swagger docs in config files  
-✅ Use descriptive error messages  
-✅ Add JSDoc comments for complex business logic  
+✅ Throw NestJS built-in exceptions with descriptive messages  
+✅ Store enums in `enums/` folder with `Type` suffix  
 
 ### DON'T: ❌
 
-**Anti-Patterns:**
-❌ Write manual constructors with property mapping (use `@AutoEntity` instead)  
-❌ Repeat validation decorators on every field (use `@AutoApplyDecorators` instead)  
-❌ Write manual entity-to-DTO mapping logic (use `@AutoResponse` instead)  
+❌ Write manual constructors or property mapping  
+❌ Repeat decorators on every field  
 ❌ Implement business logic in controllers  
-❌ Return raw entities without response DTOs  
-❌ Duplicate CRUD code across controllers  
-
-**Code Smells:**
-❌ Catch exceptions without rethrowing or logging  
-❌ Use `any` type excessively (defeats TypeScript benefits)  
-❌ Mix concerns between layers  
-❌ Ignore TypeScript type errors  
-❌ Create tight coupling between modules  
 ❌ Access repositories directly from controllers  
-
-**Common Mistakes:**
+❌ Return raw entities without response DTOs  
+❌ Use `any` type excessively  
 ❌ Skip validation in service layer  
-❌ Put business logic in DTOs or entities  
-❌ Hard-code values instead of using environment variables  
-❌ Forget to handle edge cases and null/undefined values  
-
-### Code Review Checklist:
-
-When reviewing or writing code, verify:
-
-1. **Entities**: Do they use `@AutoEntity()` decorator?
-2. **DTOs**: Do they use `@AutoApplyDecorators()` or field decorators?
-3. **Responses**: Do they use `@AutoResponse()` decorator?
-4. **Configuration**: Are field/response mappings defined in config files?
-5. **Services**: Is validation done before business logic?
-6. **Controllers**: Are they thin with no business logic?
-7. **Error Handling**: Are proper NestJS exceptions thrown?
-8. **Type Safety**: Is everything properly typed (no `any`)?
-9. **Separation**: Are layers properly separated?
-10. **Documentation**: Is Swagger documentation complete?  
 
 ## Comparison: .NET ↔ NestJS
 
@@ -1118,33 +641,9 @@ export class UserListResponseDto extends BaseListResponseDto<UserResponseDto> {}
 
 ### Alternative: Inline Field Decorators
 
-If you prefer inline decorators over centralized config:
+Use inline decorators instead of centralized config: `@StringField()`, `@EmailField()`, `@NumberField()`, `@EnumField()`, `@BooleanField()`
 
-```typescript
-import { StringField, EmailField, NumberField } from '../../../common/decorators/field.decorator';
-
-export class CreateUserDto extends BaseCreateDto {
-  @StringField('User full name', 'John Doe')
-  name: string;
-  
-  @EmailField('User email address', 'john.doe@example.com')
-  email: string;
-  
-  @NumberField('User age', 25, false, 18, 100)
-  age?: number;
-}
-
-// Available field decorators:
-// - @StringField(description, example, required?, minLength?, maxLength?)
-// - @EmailField(description, example, required?)
-// - @NumberField(description, example, required?, min?, max?)
-// - @EnumField(enum, description, example, required?)
-// - @BooleanField(description, example, required?)
-```
-
-**Choose your style:**
-- **Centralized config** (`@AutoApplyDecorators`) - Better for large projects, easier to maintain
-- **Inline decorators** - Quick for small projects, no config file needed
+**Recommended**: Use centralized `@AutoApplyDecorators(mapping)` for better maintainability.
 
 ### NestJS CLI Commands
 
@@ -1233,163 +732,11 @@ export const UserResponseMapping: Record<string, ResponseFieldConfig> = {
 
 ⚠️ **Important: Always specify `type` or `enum` in response mappings to prevent Swagger circular dependency errors!**
 
-## Common Patterns
-
-### Pattern 1: Simple Entity Creation with @AutoEntity
-```typescript
-// Service method
-async create(dto: CreateUserDto): Promise<User> {
-  await this.validateUser(dto);
-  
-  // @AutoEntity handles all the mapping!
-  const user = new User({
-    ...dto,
-    role: dto.role || 'user',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  });
-  
-  return await this.usersRepository.save(user);
-}
-```
-
-### Pattern 2: Custom Business Endpoint
-```typescript
-// Controller
-@SaveEndpoint('User', UserResponseDto)
-async saveUser(@Body() saveUserDto: SaveUserDto) {
-  const user = await this.usersService.saveUser(saveUserDto);
-  return new UserResponseDto(user);  // @AutoResponse handles mapping!
-}
-
-// Service
-async saveUser(dto: SaveUserDto): Promise<User> {
-  await this.validateUserForSave(dto);
-  await this.checkExternalServices(dto);
-  
-  const user = new User({
-    ...dto,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  });
-  
-  await this.usersRepository.save(user);
-  await this.postSaveOperations(user);
-  
-  return user;
-}
-```
-
-### Pattern 3: Query-based Filtering
-```typescript
-@GetAllEndpoint('User', UserListResponseDto, ['role'])
-findAll(@Query('role') role?: string) {
-  const users = role 
-    ? await this.usersService.findByRole(role) 
-    : await this.usersService.findAll();
-  return new UserListResponseDto(users);  // @AutoResponse handles mapping!
-}
-```
-
-### Pattern 4: Business Logic Validation
-```typescript
-// In service - always validate before operations
-private async validateUserForSave(dto: SaveUserDto): Promise<void> {
-  // Check existing records
-  const existing = await this.usersRepository.findOne({ 
-    where: { email: dto.email } 
-  });
-  if (existing) {
-    throw new ConflictException('Email already exists');
-  }
-  
-  // Business rules validation
-  if (dto.age && dto.age < 18) {
-    throw new BadRequestException('Must be 18 or older');
-  }
-  
-  // Additional business rules...
-}
-```
-
-### Pattern 5: Complex Entity with Relations
-```typescript
-@AutoEntity()
-export class Order {
-  id: number;
-  userId: number;
-  products: Product[];
-  totalAmount: number;
-  status: OrderStatus;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// Service
-async createOrder(dto: CreateOrderDto): Promise<Order> {
-  const products = await this.validateProducts(dto.productIds);
-  const totalAmount = this.calculateTotal(products, dto.quantities);
-  
-  // @AutoEntity makes complex object creation simple
-  const order = new Order({
-    userId: dto.userId,
-    products: products,
-    totalAmount: totalAmount,
-    status: OrderStatus.PENDING,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  });
-  
-  return await this.ordersRepository.save(order);
-}
-```
-
-### Pattern 6: Response Transformation
-```typescript
-// Controller
-@GetByIdEndpoint('User', UserDetailResponseDto)
-async findOne(@Param('id', ParseIntPipe) id: number) {
-  const user = await this.usersService.findOneWithRelations(id);
-  // @AutoResponse automatically maps entity to DTO with only exposed fields
-  return new UserDetailResponseDto(user);
-}
-
-// Different response for different endpoints
-@GetAllEndpoint('User', UserListItemResponseDto)
-async findAll() {
-  const users = await this.usersService.findAll();
-  // Different DTO exposes different fields for list view
-  return new UserListResponseDto(users.map(u => new UserListItemResponseDto(u)));
-}
-```
-
 ## Summary
 
-This NestJS architecture provides a **clean, maintainable, and scalable** foundation similar to .NET's best practices. By leveraging three powerful decorators (`@AutoEntity`, `@AutoApplyDecorators`, `@AutoResponse`) along with base classes and TypeScript generics, you eliminate boilerplate and focus purely on business logic.
+This architecture eliminates 70% of boilerplate code through three powerful decorators:
+- `@AutoEntity()` - Automatic constructors
+- `@AutoApplyDecorators()` - Centralized validation
+- `@AutoResponse()` - Auto entity-to-DTO mapping
 
-**Key Philosophy**: Write business logic, not boilerplate.
-
-### What Makes This Architecture Special:
-
-1. **Zero Boilerplate Entities** - `@AutoEntity()` eliminates manual constructors
-2. **Centralized Configuration** - All validation and documentation rules in config files
-3. **Automatic Mapping** - Entity ↔ DTO transformations handled automatically
-4. **Type Safety** - Full TypeScript support with compile-time checking
-5. **Consistent API** - BaseController provides uniform REST endpoints
-6. **Developer Experience** - Write less code, get more functionality
-
-### The Result:
-
-**Before decorators:**
-- Manual constructors with 10-20 lines of property mapping
-- Repeated validation decorators on every DTO field
-- Manual entity-to-DTO transformations everywhere
-- Duplicate Swagger documentation
-
-**After decorators:**
-- One-line entity definition with `@AutoEntity()`
-- Properties defined once, decorators applied automatically
-- Automatic mapping with `new ResponseDto(entity)`
-- Swagger docs generated from centralized config
-
-**You write 70% less code and focus on what matters: your business logic.**
+**Focus on business logic, not repetitive code.**
