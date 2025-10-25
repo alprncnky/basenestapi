@@ -53,8 +53,8 @@ export const CreateUserMapping = {
 
 // In responses/mapping.ts
 export const UserResponseMapping: Record<string, ResponseFieldConfig> = {
-  name: { description: 'User name', example: 'John Doe', required: true },
-  email: { description: 'User email', example: 'john@example.com', required: true },
+  name: { description: 'User name', example: 'John Doe', required: true, type: String },
+  email: { description: 'User email', example: 'john@example.com', required: true, type: String },
 };
 
 // 5️⃣ Service - Focus on business logic
@@ -165,10 +165,10 @@ export class UserResponseDto extends BaseResponseDto {
 
 // In responses/mapping.ts
 export const UserResponseMapping: Record<string, ResponseFieldConfig> = {
-  name: { description: 'User full name', example: 'John Doe', required: true },
-  email: { description: 'User email', example: 'john@example.com', required: true },
-  age: { description: 'User age', example: 25, required: false },
-  role: { description: 'User role', example: 'user', required: true },
+  name: { description: 'User full name', example: 'John Doe', required: true, type: String },
+  email: { description: 'User email', example: 'john@example.com', required: true, type: String },
+  age: { description: 'User age', example: 25, required: false, type: Number },
+  role: { description: 'User role', example: 'user', required: true, type: String },
 };
 
 // Usage - automatic mapping! No constructor needed!
@@ -181,6 +181,25 @@ return new UserResponseDto(user);  // Auto-maps all fields from entity!
 - ✅ Automatic entity-to-DTO transformation
 - ✅ Centralized Swagger documentation
 - ✅ Consistent API responses
+
+**ResponseFieldConfig Properties:**
+- `description`: Field description for Swagger
+- `example`: Example value for Swagger
+- `required`: Whether field is required
+- `type`: Explicit type (String, Number, Boolean) - recommended for better Swagger inference
+- `enum`: Enum type for enum fields (e.g., `enum: PaymentStatus`)
+- `isArray`: Set to `true` for array fields
+
+**Example with Enum:**
+```typescript
+import { PaymentStatus } from '../entities/payment.entity';
+
+export const PaymentResponseMapping: Record<string, ResponseFieldConfig> = {
+  amount: { description: 'Payment amount', example: 99.99, required: true, type: Number },
+  status: { description: 'Payment status', example: 'completed', required: true, enum: PaymentStatus },
+  tags: { description: 'Payment tags', example: ['online', 'express'], required: false, type: String, isArray: true },
+};
+```
 
 ### 2. Base Classes & Inheritance
 
@@ -664,10 +683,10 @@ export class UpdateProductDto extends BaseUpdateDto {
 import { ResponseFieldConfig } from '../../../common/decorators/auto-response.decorator';
 
 export const ProductResponseMapping: Record<string, ResponseFieldConfig> = {
-  name: { description: 'Product name', example: 'Laptop', required: true },
-  description: { description: 'Product description', example: 'High-performance laptop', required: false },
-  price: { description: 'Product price', example: 999.99, required: true },
-  category: { description: 'Product category', example: 'Electronics', required: true },
+  name: { description: 'Product name', example: 'Laptop', required: true, type: String },
+  description: { description: 'Product description', example: 'High-performance laptop', required: false, type: String },
+  price: { description: 'Product price', example: 999.99, required: true, type: Number },
+  category: { description: 'Product category', example: 'Electronics', required: true, type: String },
 };
 ```
 
@@ -1136,8 +1155,8 @@ export const CreateUserMapping = {
 import { ResponseFieldConfig } from '../../../common/decorators/auto-response.decorator';
 
 export const UserResponseMapping: Record<string, ResponseFieldConfig> = {
-  name: { description: 'User name', example: 'John Doe', required: true },
-  email: { description: 'User email', example: 'john@example.com', required: true },
+  name: { description: 'User name', example: 'John Doe', required: true, type: String },
+  email: { description: 'User email', example: 'john@example.com', required: true, type: String },
 };
 ```
 
@@ -1146,6 +1165,8 @@ export const UserResponseMapping: Record<string, ResponseFieldConfig> = {
 - Type-safe - pass objects, not strings
 - Easier to refactor - no centralized coupling
 - Clear dependencies - imports show relationships
+
+⚠️ **Important: Always specify `type` or `enum` in response mappings to prevent Swagger circular dependency errors!**
 
 ## Common Patterns
 
