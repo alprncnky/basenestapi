@@ -192,11 +192,11 @@ return new UserResponseDto(user);  // Auto-maps all fields from entity!
 
 **Example with Enum:**
 ```typescript
-import { PaymentStatus } from '../entities/payment.entity';
+import { PaymentStatusType } from '../enums/payment-status.enum';
 
 export const PaymentResponseMapping: Record<string, ResponseFieldConfig> = {
   amount: { description: 'Payment amount', example: 99.99, required: true, type: Number },
-  status: { description: 'Payment status', example: 'completed', required: true, enum: PaymentStatus },
+  status: { description: 'Payment status', example: 'completed', required: true, enum: PaymentStatusType },
   tags: { description: 'Payment tags', example: ['online', 'express'], required: false, type: String, isArray: true },
 };
 ```
@@ -588,8 +588,17 @@ src/
 ├── modules/                         # Feature modules
 │   ├── users/
 │   │   ├── dto/                     # Data Transfer Objects
+│   │   │   ├── create-user.dto.ts
+│   │   │   ├── update-user.dto.ts
+│   │   │   └── mapping.ts           # Field validation mappings
 │   │   ├── entities/                # Domain entities
+│   │   │   └── user.entity.ts
+│   │   ├── enums/                   # Module-specific enums (naming: *Type)
+│   │   │   └── user-role.enum.ts    # e.g., UserRoleType
 │   │   ├── responses/               # Response DTOs
+│   │   │   ├── user-response.dto.ts
+│   │   │   ├── user-list-response.dto.ts
+│   │   │   └── mapping.ts           # Response field mappings
 │   │   ├── users.controller.ts      # API endpoints
 │   │   ├── users.service.ts         # Business logic
 │   │   └── users.module.ts          # Module definition
@@ -603,14 +612,65 @@ src/
 └── main.ts                          # Application bootstrap
 ```
 
+### Module Organization Rules:
+
+**Enums:**
+- Store all module-specific enums in the `enums/` folder
+- Naming convention: `[name]Type` (e.g., `PaymentStatusType`, `UserRoleType`, `OrderStatusType`)
+- File naming: `[kebab-case].enum.ts` (e.g., `payment-status.enum.ts`, `user-role.enum.ts`)
+- The `Type` suffix makes it immediately clear that the import is an enum type
+
+**Example Enum Structure:**
+```typescript
+// modules/payment/enums/payment-status.enum.ts
+export enum PaymentStatusType {
+  PENDING = 'pending',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+  REFUNDED = 'refunded',
+}
+```
+
+**Usage:**
+```typescript
+// In entities
+import { PaymentStatusType } from '../enums/payment-status.enum';
+
+// In services
+import { PaymentStatusType } from './enums/payment-status.enum';
+
+// In response mappings
+import { PaymentStatusType } from '../enums/payment-status.enum';
+```
+
 ## Development Checklist
 
 ### When Adding New Feature (Ultra-Simple Pattern):
 
-#### Step 1: Create Entity
+#### Step 1: Create Enums (if needed)
+**File:** `modules/[feature]/enums/[feature-status].enum.ts`
+```typescript
+/**
+ * Product status enum
+ * Naming convention: [Feature][Purpose]Type
+ */
+export enum ProductStatusType {
+  DRAFT = 'draft',
+  ACTIVE = 'active',
+  ARCHIVED = 'archived',
+}
+```
+
+**Important:** 
+- All enum names must end with `Type` suffix
+- Use PascalCase for enum names (e.g., `PaymentStatusType`, `UserRoleType`)
+- Store enums in the `enums/` folder within the module
+
+#### Step 2: Create Entity
 **File:** `modules/[feature]/entities/[feature].entity.ts`
 ```typescript
 import { AutoEntity } from '../../../common/decorators/auto-entity.decorator';
+import { ProductStatusType } from '../enums/product-status.enum';
 
 @AutoEntity()
 export class Product {
@@ -619,6 +679,7 @@ export class Product {
   description?: string;
   price: number;
   category: string;
+  status: ProductStatusType;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -626,7 +687,7 @@ export class Product {
 
 **That's it! No constructor needed.**
 
-#### Step 2: Create Mappings
+#### Step 3: Create Mappings
 **File:** `modules/[feature]/dto/mapping.ts`
 ```typescript
 import { StringField, NumberField } from '../../../common/decorators/field.decorator';
@@ -646,7 +707,7 @@ export const UpdateProductMapping = {
 };
 ```
 
-#### Step 3: Create Input DTOs
+#### Step 4: Create Input DTOs
 **File:** `modules/[feature]/dto/create-[feature].dto.ts`
 ```typescript
 import { BaseCreateDto } from '../../../common/base/base-dto';
@@ -677,7 +738,7 @@ export class UpdateProductDto extends BaseUpdateDto {
 }
 ```
 
-#### Step 4: Create Response Mappings
+#### Step 5: Create Response Mappings
 **File:** `modules/[feature]/responses/mapping.ts`
 ```typescript
 import { ResponseFieldConfig } from '../../../common/decorators/auto-response.decorator';
@@ -690,7 +751,7 @@ export const ProductResponseMapping: Record<string, ResponseFieldConfig> = {
 };
 ```
 
-#### Step 5: Create Response DTOs
+#### Step 6: Create Response DTOs
 **File:** `modules/[feature]/responses/[feature]-response.dto.ts`
 ```typescript
 import { BaseResponseDto } from '../../../common/base/base-dto';
@@ -720,7 +781,7 @@ export class ProductListResponseDto extends BaseListResponseDto<ProductResponseD
 
 **That's it! No constructor boilerplate needed.**
 
-#### Step 6: Create Service
+#### Step 7: Create Service
 **File:** `modules/[feature]/[feature].service.ts`
 ```typescript
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
@@ -791,7 +852,7 @@ export class ProductsService {
 }
 ```
 
-#### Step 7: Create Controller
+#### Step 8: Create Controller
 **File:** `modules/[feature]/[feature].controller.ts`
 ```typescript
 import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
@@ -850,7 +911,7 @@ export class ProductsController extends BaseController<
 }
 ```
 
-#### Step 8: Create Module
+#### Step 9: Create Module
 **File:** `modules/[feature]/[feature].module.ts`
 ```typescript
 import { Module } from '@nestjs/common';
@@ -868,7 +929,7 @@ import { Product } from './entities/product.entity';
 export class ProductsModule {}
 ```
 
-#### Step 9: Register Module
+#### Step 10: Register Module
 **File:** `app.module.ts`
 ```typescript
 import { ProductsModule } from './modules/products/products.module';
@@ -882,7 +943,7 @@ import { ProductsModule } from './modules/products/products.module';
 export class AppModule {}
 ```
 
-#### Step 10: Test
+#### Step 11: Test
 1. Run the app: `npm run start:dev`
 2. Open Swagger: `http://localhost:3000/api/docs`
 3. Test all CRUD endpoints
@@ -930,6 +991,9 @@ export class AppModule {}
 - **Single Responsibility**: Each class/method should have one clear purpose
 - **DRY Principle**: Use base classes and utilities to avoid repetition
 - **Consistent Naming**: Follow established naming conventions
+  - Enums: `[Feature][Purpose]Type` (e.g., `PaymentStatusType`, `UserRoleType`)
+  - Files: `[kebab-case].enum.ts` for enums
+  - Folder: Store enums in `enums/` folder within each module
 - **Type Safety**: Leverage TypeScript for compile-time checking
 
 ## Best Practices
@@ -941,6 +1005,7 @@ export class AppModule {}
 ✅ Use `@AutoApplyDecorators(mapping)` and `@AutoResponse(mapping)` for all DTOs  
 ✅ List response DTOs: Just extend `BaseListResponseDto<T>` - empty class, no constructor!  
 ✅ Define mappings per-module in `dto/mapping.ts` and `responses/mapping.ts`  
+✅ Store enums in `enums/` folder with `Type` suffix (e.g., `PaymentStatusType`)  
 
 **Architecture Patterns:**
 ✅ Extend BaseController for standard CRUD operations  
