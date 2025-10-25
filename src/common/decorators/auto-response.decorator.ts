@@ -65,3 +65,36 @@ export function AutoResponse(responseMappings: Record<string, ResponseFieldConfi
     return enhancedClass;
   };
 }
+
+/**
+ * Decorator for list response DTOs that automatically configures Swagger documentation
+ * Usage: @AutoListResponse(UserResponseDto)
+ * 
+ * This decorator automatically applies the correct ApiProperty to the 'items' array
+ * to ensure proper Swagger schema generation for generic list responses
+ * 
+ * @example
+ * @AutoListResponse(UserResponseDto)
+ * export class UserListResponseDto extends BaseListResponseDto<UserResponseDto> {}
+ */
+export function AutoListResponse(itemType: any) {
+  return function <T extends { new (...args: any[]): {} }>(constructor: T) {
+    // Delete the generic property descriptor to avoid conflicts
+    delete constructor.prototype.items;
+    
+    // Apply ApiProperty to items with the specific type
+    ApiProperty({
+      description: `List of ${itemType.name} items`,
+      type: itemType,
+      isArray: true,
+    })(constructor.prototype, 'items');
+
+    // Preserve the original class name for proper Swagger schema generation
+    Object.defineProperty(constructor, 'name', {
+      value: constructor.name,
+      writable: false,
+    });
+
+    return constructor;
+  };
+}

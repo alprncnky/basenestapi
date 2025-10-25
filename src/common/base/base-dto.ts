@@ -37,6 +37,12 @@ export abstract class BaseResponseDto {
 
 /**
  * Generic list response DTO
+ * 
+ * Usage: Extend this class and apply @AutoListResponse decorator for automatic Swagger documentation
+ * 
+ * @example
+ * @AutoListResponse(UserResponseDto)
+ * export class UserListResponseDto extends BaseListResponseDto<UserResponseDto> {}
  */
 export class BaseListResponseDto<T> {
   @ApiProperty({ description: 'List of items', isArray: true })
