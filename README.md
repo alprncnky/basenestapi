@@ -1,6 +1,7 @@
 # Clean Architecture NestJS API
 
 A NestJS API built with Clean Architecture principles, featuring zero-boilerplate decorators and automatic CRUD operations.
+Im just a .NET Developer minded. So trying to create base NestJS Api by that point of view.
 
 ## Quick Start
 
