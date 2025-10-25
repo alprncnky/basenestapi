@@ -7,6 +7,9 @@ export interface ResponseFieldConfig {
   description: string;
   example: any;
   required: boolean;
+  type?: any; // Optional explicit type (String, Number, Boolean, etc.)
+  enum?: any; // Optional enum type
+  isArray?: boolean; // Optional array flag
 }
 
 /**
@@ -21,10 +24,21 @@ export function AutoResponse(responseMappings: Record<string, ResponseFieldConfi
     if (responseMappings) {
       // Apply Swagger decorators based on configuration
       for (const [propertyKey, config] of Object.entries(responseMappings)) {
+        // Infer type from example if not explicitly provided
+        let fieldType = config.type;
+        if (!fieldType && config.example !== undefined && config.example !== null) {
+          if (typeof config.example === 'string') fieldType = String;
+          else if (typeof config.example === 'number') fieldType = Number;
+          else if (typeof config.example === 'boolean') fieldType = Boolean;
+        }
+
         ApiProperty({
           description: config.description,
           example: config.example,
           required: config.required,
+          ...(fieldType && { type: fieldType }),
+          ...(config.enum && { enum: config.enum }),
+          ...(config.isArray && { isArray: config.isArray }),
         })(constructor.prototype, propertyKey);
       }
     } else {

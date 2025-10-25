@@ -25,7 +25,7 @@ export function StringField(
   maxLength?: number,
 ) {
   const decorators = [
-    ApiProperty({ description, example, required }),
+    ApiProperty({ description, example, required, type: String }),
     IsString(),
   ];
 
@@ -55,7 +55,7 @@ export function EmailField(
   required: boolean = true,
 ) {
   const decorators = [
-    ApiProperty({ description, example, required }),
+    ApiProperty({ description, example, required, type: String }),
     IsEmail(),
   ];
 
@@ -79,7 +79,7 @@ export function NumberField(
   max?: number,
 ) {
   const decorators = [
-    ApiProperty({ description, example, required }),
+    ApiProperty({ description, example, required, type: Number }),
     IsNumber(),
   ];
 
@@ -109,7 +109,7 @@ export function BooleanField(
   required: boolean = true,
 ) {
   const decorators = [
-    ApiProperty({ description, example, required }),
+    ApiProperty({ description, example, required, type: Boolean }),
     IsBoolean(),
   ];
 
