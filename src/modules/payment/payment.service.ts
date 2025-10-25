@@ -25,16 +25,16 @@ export class PaymentService implements IBaseService<Payment> {
 
     // 2. Generate transaction ID
     const transactionId = this.generateTransactionId();
-
-    // 3. Create payment entity using @AutoEntity
-    const payment = new Payment({
+    
+    // 3. Create payment entity - @AutoEntity allows object literal
+    const payment: Payment = {
       id: this.idCounter++,
       ...createPaymentDto,
       status: PaymentStatus.PENDING,
       transactionId,
       createdAt: new Date(),
       updatedAt: new Date(),
-    });
+    };
 
     // 4. Save payment
     this.payments.push(payment);
@@ -87,12 +87,16 @@ export class PaymentService implements IBaseService<Payment> {
       this.validateStatusTransition(payment.status, updatePaymentDto.status as PaymentStatus);
     }
 
-    // Update payment using @AutoEntity
-    const updatedPayment = new Payment({
+    // Prepare update data with proper type casting
+    const { status, ...otherUpdates } = updatePaymentDto;
+    
+    // Update payment - @AutoEntity allows object literal
+    const updatedPayment: Payment = {
       ...payment,
-      ...updatePaymentDto,
+      ...otherUpdates,
+      ...(status && { status: status as PaymentStatus }),
       updatedAt: new Date(),
-    });
+    };
 
     // Replace in array
     const index = this.payments.findIndex((p) => p.id === id);
@@ -129,11 +133,11 @@ export class PaymentService implements IBaseService<Payment> {
     // Simulate payment processing
     const success = Math.random() > 0.1; // 90% success rate
 
-    const updatedPayment = new Payment({
+    const updatedPayment: Payment = {
       ...payment,
       status: success ? PaymentStatus.COMPLETED : PaymentStatus.FAILED,
       updatedAt: new Date(),
-    });
+    };
 
     const index = this.payments.findIndex((p) => p.id === id);
     this.payments[index] = updatedPayment;
@@ -151,11 +155,11 @@ export class PaymentService implements IBaseService<Payment> {
       throw new BadRequestException(`Can only refund completed payments`);
     }
 
-    const updatedPayment = new Payment({
+    const updatedPayment: Payment = {
       ...payment,
       status: PaymentStatus.REFUNDED,
       updatedAt: new Date(),
-    });
+    };
 
     const index = this.payments.findIndex((p) => p.id === id);
     this.payments[index] = updatedPayment;
