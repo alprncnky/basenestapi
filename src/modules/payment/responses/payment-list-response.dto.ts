@@ -3,11 +3,7 @@ import { PaymentResponseDto } from './payment-response.dto';
 
 /**
  * Response DTO for payment list
- * Inherits items and total from BaseListResponseDto
+ * Type alias for BaseListResponseDto with PaymentResponseDto items
  */
-export class PaymentListResponseDto extends BaseListResponseDto<PaymentResponseDto> {
-  constructor(items: PaymentResponseDto[], total: number) {
-    super(items, total);
-  }
-}
+export class PaymentListResponseDto extends BaseListResponseDto<PaymentResponseDto> {}
 

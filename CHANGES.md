@@ -146,6 +146,28 @@ If you have existing modules with created response DTOs:
 ✅ All endpoints working correctly  
 ✅ Swagger documentation updated
 
+## Additional Simplification: List Response DTOs
+
+Following the same principle of reducing boilerplate, we also simplified the list response DTO pattern:
+
+**Before:**
+```typescript
+export class PaymentListResponseDto extends BaseListResponseDto<PaymentResponseDto> {
+  constructor(items: PaymentResponseDto[], total: number) {
+    super(items, total);
+  }
+}
+```
+
+**After:**
+```typescript
+export class PaymentListResponseDto extends BaseListResponseDto<PaymentResponseDto> {}
+```
+
+✅ **No constructor needed** - TypeScript automatically inherits the parent constructor!
+
+This pattern is now documented in `AGENTS.md` as the recommended approach for all list response DTOs.
+
 ## Date
 October 25, 2025
 

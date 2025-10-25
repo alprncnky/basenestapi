@@ -658,6 +658,19 @@ export class ProductResponseDto extends BaseResponseDto {
 }
 ```
 
+**File:** `modules/[feature]/responses/[feature]-list-response.dto.ts`
+```typescript
+import { BaseListResponseDto } from '../../../common/base/base-dto';
+import { ProductResponseDto } from './product-response.dto';
+
+/**
+ * Response DTO for product list
+ * Simply extends BaseListResponseDto - no constructor needed!
+ */
+export class ProductListResponseDto extends BaseListResponseDto<ProductResponseDto> {}
+```
+
+**That's it! No constructor boilerplate needed.**
 
 #### Step 4: Add Configuration Mappings
 **File:** `common/config/field-mappings.ts`
@@ -867,7 +880,8 @@ export class AppModule {}
 **You wrote:**
 - Entity: Just properties + `@AutoEntity()` decorator
 - DTOs: Just properties + `@AutoApplyDecorators()` decorator
-- Responses: Just properties + `@AutoResponse()` decorator
+- Response: Just properties + `@AutoResponse()` decorator
+- List Response: Empty class extending `BaseListResponseDto<T>` (no constructor!)
 - Configuration: Simple mapping objects
 - Service: Business logic only
 - Controller: Endpoint definitions using base class
@@ -913,6 +927,7 @@ export class AppModule {}
 **Use Decorators for Everything:**
 ✅ Use `@AutoEntity()` on all entities - no manual constructors  
 ✅ Use `@AutoApplyDecorators()` or `@AutoResponse()` for all DTOs  
+✅ List response DTOs: Just extend `BaseListResponseDto<T>` - empty class, no constructor!  
 ✅ Define configuration once in `field-mappings.ts` and `response-mappings.ts`  
 
 **Architecture Patterns:**
@@ -1019,6 +1034,9 @@ export class UserResponseDto extends BaseResponseDto {
   name: string;
   email: string;
 }
+
+// 4. List Response DTOs - Empty class, no constructor!
+export class UserListResponseDto extends BaseListResponseDto<UserResponseDto> {}
 ```
 
 ### Alternative: Inline Field Decorators

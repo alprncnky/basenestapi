@@ -156,6 +156,17 @@ export class PaymentResponseDto extends BaseResponseDto {
 return new PaymentResponseDto(payment); // Auto-maps all fields!
 ```
 
+### 4. List Response DTOs (Ultra-Simple!)
+```typescript
+// Empty class - no constructor boilerplate!
+export class PaymentListResponseDto extends BaseListResponseDto<PaymentResponseDto> {}
+
+// Usage - same as always
+return new PaymentListResponseDto(responseItems, total);
+```
+
+✅ **Why no constructor?** TypeScript automatically inherits the parent's constructor. Zero boilerplate!
+
 ## 📚 Documentation
 
 - **Full Guidelines**: See `AGENTS.md` for complete architectural patterns
