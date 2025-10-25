@@ -7,7 +7,7 @@
  */
 export function AutoEntity() {
   return function <T extends { new (...args: any[]): {} }>(constructor: T) {
-    return class extends constructor {
+    const enhancedClass = class extends constructor {
       constructor(...args: any[]) {
         super();
         if (args.length > 0 && args[0] && typeof args[0] === 'object') {
@@ -15,6 +15,14 @@ export function AutoEntity() {
         }
       }
     } as T;
+
+    // Preserve the original class name
+    Object.defineProperty(enhancedClass, 'name', {
+      value: constructor.name,
+      writable: false,
+    });
+
+    return enhancedClass;
   };
 }
 

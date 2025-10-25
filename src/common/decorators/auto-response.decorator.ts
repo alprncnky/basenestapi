@@ -46,7 +46,8 @@ export function AutoResponse(responseMappings: Record<string, ResponseFieldConfi
     }
 
     // Return enhanced class with automatic mapping constructor
-    return class extends constructor {
+    // Preserve the original class name for Swagger
+    const enhancedClass = class extends constructor {
       constructor(...args: any[]) {
         super(...args);
         if (args[0] && typeof args[0] === 'object') {
@@ -54,5 +55,13 @@ export function AutoResponse(responseMappings: Record<string, ResponseFieldConfi
         }
       }
     } as T;
+
+    // Preserve the original class name for proper Swagger schema generation
+    Object.defineProperty(enhancedClass, 'name', {
+      value: constructor.name,
+      writable: false,
+    });
+
+    return enhancedClass;
   };
 }
