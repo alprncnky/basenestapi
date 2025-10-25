@@ -40,7 +40,6 @@ src/
 │       │   └── payment.entity.ts
 │       ├── responses/
 │       │   ├── payment-response.dto.ts
-│       │   ├── payment-created-response.dto.ts
 │       │   └── payment-list-response.dto.ts
 │       ├── payment.controller.ts
 │       ├── payment.service.ts

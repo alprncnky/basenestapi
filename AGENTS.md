@@ -82,7 +82,7 @@ export class UsersService {
 // 6️⃣ Controller - Automatic CRUD
 @CrudController('users', 'User')
 export class UsersController extends BaseController<...> {
-  @CreateEndpoint('User', UserCreatedResponseDto)
+  @CreateEndpoint('User', UserResponseDto)
   create(@Body() createDto: CreateUserDto) {
     return this.createEntity(createDto);
   }
@@ -200,7 +200,7 @@ return new UserResponseDto(user);  // Auto-maps all fields from entity!
 - **BaseListResponseDto<T>**: Generic list response
   - Contains `items[]` and `total` count
   - Consistent pagination structure
-- **BaseController<T1,T2,T3,T4,T5,T6>**: Generic controller with full CRUD
+- **BaseController<T1,T2,T3,T4,T5>**: Generic controller with full CRUD
   - Automatic CRUD endpoint generation
   - Built-in error handling and response formatting
   - Override methods only for custom business logic
@@ -214,8 +214,7 @@ export class UsersController extends BaseController<
   CreateUserDto,          // T2: Create DTO
   UpdateUserDto,          // T3: Update DTO
   UserResponseDto,        // T4: Single Response
-  UserListResponseDto,    // T5: List Response
-  UserCreatedResponseDto  // T6: Created Response
+  UserListResponseDto     // T5: List Response
 > {
   constructor(private readonly usersService: UsersService) {
     super(usersService);
@@ -224,7 +223,6 @@ export class UsersController extends BaseController<
   // Implement abstract methods
   protected getResponseClass = () => UserResponseDto;
   protected getListResponseClass = () => UserListResponseDto;
-  protected getCreatedResponseClass = () => UserCreatedResponseDto;
   protected getEntityName = () => 'User';
   
   // Override only when custom business logic needed
@@ -660,17 +658,6 @@ export class ProductResponseDto extends BaseResponseDto {
 }
 ```
 
-**File:** `modules/[feature]/responses/[feature]-created-response.dto.ts`
-```typescript
-import { BaseResponseDto } from '../../../common/base/base-dto';
-import { AutoResponse } from '../../../common/decorators/auto-response.decorator';
-
-@AutoResponse('ProductCreatedResponseDto')
-export class ProductCreatedResponseDto extends BaseResponseDto {
-  name: string;
-  price: number;
-}
-```
 
 #### Step 4: Add Configuration Mappings
 **File:** `common/config/field-mappings.ts`
@@ -704,11 +691,6 @@ export const RESPONSE_MAPPINGS = {
     description: { description: 'Product description', example: 'High-performance laptop', required: false },
     price: { description: 'Product price', example: 999.99, required: true },
     category: { description: 'Product category', example: 'Electronics', required: true },
-  },
-  
-  ProductCreatedResponseDto: {
-    name: { description: 'Product name', example: 'Laptop', required: true },
-    price: { description: 'Product price', example: 999.99, required: true },
   },
 };
 ```
@@ -796,7 +778,6 @@ import { Product } from './entities/product.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductResponseDto } from './responses/product-response.dto';
-import { ProductCreatedResponseDto } from './responses/product-created-response.dto';
 import { ProductListResponseDto } from './responses/product-list-response.dto';
 
 @CrudController('products', 'Product')
@@ -805,8 +786,7 @@ export class ProductsController extends BaseController<
   CreateProductDto,
   UpdateProductDto,
   ProductResponseDto,
-  ProductListResponseDto,
-  ProductCreatedResponseDto
+  ProductListResponseDto
 > {
   constructor(private readonly productsService: ProductsService) {
     super(productsService);
@@ -815,11 +795,10 @@ export class ProductsController extends BaseController<
   // Implement abstract methods
   protected getResponseClass = () => ProductResponseDto;
   protected getListResponseClass = () => ProductListResponseDto;
-  protected getCreatedResponseClass = () => ProductCreatedResponseDto;
   protected getEntityName = () => 'Product';
   
   // Standard CRUD endpoints using base class methods
-  @CreateEndpoint('Product', ProductCreatedResponseDto)
+  @CreateEndpoint('Product', ProductResponseDto)
   create(@Body() createDto: CreateProductDto) {
     return this.createEntity(createDto);
   }
@@ -1174,10 +1153,10 @@ async create(dto: CreateUserDto): Promise<User> {
 ### Pattern 2: Custom Business Endpoint
 ```typescript
 // Controller
-@SaveEndpoint('User', UserCreatedResponseDto)
+@SaveEndpoint('User', UserResponseDto)
 async saveUser(@Body() saveUserDto: SaveUserDto) {
   const user = await this.usersService.saveUser(saveUserDto);
-  return new UserCreatedResponseDto(user);  // @AutoResponse handles mapping!
+  return new UserResponseDto(user);  // @AutoResponse handles mapping!
 }
 
 // Service

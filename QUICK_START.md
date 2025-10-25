@@ -21,7 +21,7 @@ Your NestJS project has been successfully configured with the Clean Architecture
 A complete CRUD module demonstrating all architectural patterns:
 - ✅ Payment entity with @AutoEntity
 - ✅ Create/Update DTOs with @AutoApplyDecorators
-- ✅ Response DTOs with @AutoResponse
+- ✅ Response DTO with @AutoResponse (single response for all operations)
 - ✅ Service with business logic and validation
 - ✅ Controller with standard CRUD + custom endpoints
 - ✅ Full Swagger documentation

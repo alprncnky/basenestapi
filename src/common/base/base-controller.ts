@@ -10,9 +10,8 @@ import { BaseListResponseDto } from './base-dto';
  * - T3: Update DTO type
  * - T4: Single response DTO type
  * - T5: List response DTO type
- * - T6: Created response DTO type
  */
-export abstract class BaseController<T1, T2, T3, T4, T5, T6> {
+export abstract class BaseController<T1, T2, T3, T4, T5> {
   constructor(protected readonly service: IBaseService<T1>) {}
 
   /**
@@ -20,15 +19,14 @@ export abstract class BaseController<T1, T2, T3, T4, T5, T6> {
    */
   protected abstract getResponseClass(): new (data: T1) => T4;
   protected abstract getListResponseClass(): new (items: T4[], total: number) => T5;
-  protected abstract getCreatedResponseClass(): new (data: T1) => T6;
   protected abstract getEntityName(): string;
 
   /**
-   * Create entity
+   * Create entity - returns standard response DTO
    */
-  protected async createEntity(createDto: T2): Promise<T6> {
+  protected async createEntity(createDto: T2): Promise<T4> {
     const entity = await this.service.create(createDto);
-    const ResponseClass = this.getCreatedResponseClass();
+    const ResponseClass = this.getResponseClass();
     return new ResponseClass(entity);
   }
 

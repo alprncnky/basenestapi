@@ -14,7 +14,6 @@ import { Payment, PaymentStatus } from './entities/payment.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { PaymentResponseDto } from './responses/payment-response.dto';
-import { PaymentCreatedResponseDto } from './responses/payment-created-response.dto';
 import { PaymentListResponseDto } from './responses/payment-list-response.dto';
 
 /**
@@ -29,8 +28,7 @@ export class PaymentController extends BaseController<
   CreatePaymentDto,
   UpdatePaymentDto,
   PaymentResponseDto,
-  PaymentListResponseDto,
-  PaymentCreatedResponseDto
+  PaymentListResponseDto
 > {
   constructor(private readonly paymentService: PaymentService) {
     super(paymentService);
@@ -41,14 +39,13 @@ export class PaymentController extends BaseController<
    */
   protected getResponseClass = () => PaymentResponseDto;
   protected getListResponseClass = () => PaymentListResponseDto;
-  protected getCreatedResponseClass = () => PaymentCreatedResponseDto;
   protected getEntityName = () => 'Payment';
 
   /**
    * Standard CRUD endpoints using base class methods
    */
 
-  @CreateEndpoint('Payment', PaymentCreatedResponseDto)
+  @CreateEndpoint('Payment', PaymentResponseDto)
   create(@Body() createPaymentDto: CreatePaymentDto) {
     return this.createEntity(createPaymentDto);
   }

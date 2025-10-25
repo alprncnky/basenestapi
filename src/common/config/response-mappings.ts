@@ -22,12 +22,5 @@ export const RESPONSE_MAPPINGS: Record<string, Record<string, ResponseFieldConfi
     description: { description: 'Payment description', example: 'Payment for order #1234', required: false },
     transactionId: { description: 'Transaction ID', example: 'txn_1234567890', required: false },
   },
-
-  PaymentCreatedResponseDto: {
-    amount: { description: 'Payment amount', example: 99.99, required: true },
-    currency: { description: 'Payment currency', example: 'USD', required: true },
-    status: { description: 'Payment status', example: 'pending', required: true },
-    transactionId: { description: 'Transaction ID', example: 'txn_1234567890', required: false },
-  },
 };
 

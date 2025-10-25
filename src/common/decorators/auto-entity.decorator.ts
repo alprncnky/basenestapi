@@ -9,12 +9,12 @@ export function AutoEntity() {
   return function <T extends { new (...args: any[]): {} }>(constructor: T) {
     return class extends constructor {
       constructor(...args: any[]) {
-        super(...args);
-        if (args[0] && typeof args[0] === 'object') {
+        super();
+        if (args.length > 0 && args[0] && typeof args[0] === 'object') {
           Object.assign(this, args[0]);
         }
       }
-    };
+    } as T;
   };
 }
 
