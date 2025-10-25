@@ -31,35 +31,30 @@ export class User {
   updatedAt: Date;
 }
 
-// 2️⃣ Input DTO - Validation from config
-@AutoApplyDecorators('CreateUserDto')
+// 2️⃣ Input DTO - Validation from mapping
+@AutoApplyDecorators(CreateUserMapping)
 export class CreateUserDto extends BaseCreateDto {
   name: string;
   email: string;
 }
 
 // 3️⃣ Response DTO - Auto-mapping + Swagger
-@AutoResponse('UserResponseDto')
+@AutoResponse(UserResponseMapping)
 export class UserResponseDto extends BaseResponseDto {
   name: string;
   email: string;
 }
 
-// 4️⃣ Configuration (centralized)
-// In common/config/field-mappings.ts
-export const FIELD_MAPPINGS = {
-  CreateUserDto: {
-    name: () => StringField('User name', 'John Doe'),
-    email: () => EmailField('User email', 'john@example.com'),
-  }
+// 4️⃣ Mappings (per-module in dto/mapping.ts)
+export const CreateUserMapping = {
+  name: () => StringField('User name', 'John Doe'),
+  email: () => EmailField('User email', 'john@example.com'),
 };
 
-// In common/config/response-mappings.ts
-export const RESPONSE_MAPPINGS = {
-  UserResponseDto: {
-    name: { description: 'User name', example: 'John Doe', required: true },
-    email: { description: 'User email', example: 'john@example.com', required: true },
-  }
+// In responses/mapping.ts
+export const UserResponseMapping: Record<string, ResponseFieldConfig> = {
+  name: { description: 'User name', example: 'John Doe', required: true },
+  email: { description: 'User email', example: 'john@example.com', required: true },
 };
 
 // 5️⃣ Service - Focus on business logic
@@ -128,8 +123,9 @@ const user = new User({ id: 1, name: 'John', email: 'john@example.com', role: 'u
 ```typescript
 import { BaseCreateDto } from '../../../common/base/base-dto';
 import { AutoApplyDecorators } from '../../../common/decorators/auto-apply.decorator';
+import { CreateUserMapping } from './mapping';
 
-@AutoApplyDecorators('CreateUserDto')
+@AutoApplyDecorators(CreateUserMapping)
 export class CreateUserDto extends BaseCreateDto {
   name: string;
   email: string;
@@ -137,14 +133,12 @@ export class CreateUserDto extends BaseCreateDto {
   role?: string;
 }
 
-// Configuration in common/config/field-mappings.ts
-export const FIELD_MAPPINGS = {
-  CreateUserDto: {
-    name: () => StringField('User full name', 'John Doe'),
-    email: () => EmailField('User email address', 'john@example.com'),
-    age: () => NumberField('User age', 25, false, 18, 100),
-    role: () => StringField('User role', 'user', false),
-  }
+// In dto/mapping.ts
+export const CreateUserMapping = {
+  name: () => StringField('User full name', 'John Doe'),
+  email: () => EmailField('User email address', 'john@example.com'),
+  age: () => NumberField('User age', 25, false, 18, 100),
+  role: () => StringField('User role', 'user', false),
 };
 ```
 
@@ -158,9 +152,10 @@ export const FIELD_MAPPINGS = {
 
 ```typescript
 import { BaseResponseDto } from '../../../common/base/base-dto';
-import { AutoResponse } from '../../../common/decorators/auto-response.decorator';
+import { AutoResponse, ResponseFieldConfig } from '../../../common/decorators/auto-response.decorator';
+import { UserResponseMapping } from './mapping';
 
-@AutoResponse('UserResponseDto')
+@AutoResponse(UserResponseMapping)
 export class UserResponseDto extends BaseResponseDto {
   name: string;
   email: string;
@@ -168,14 +163,12 @@ export class UserResponseDto extends BaseResponseDto {
   role: string;
 }
 
-// Configuration in common/config/response-mappings.ts
-export const RESPONSE_MAPPINGS = {
-  UserResponseDto: {
-    name: { description: 'User full name', example: 'John Doe', required: true },
-    email: { description: 'User email', example: 'john@example.com', required: true },
-    age: { description: 'User age', example: 25, required: false },
-    role: { description: 'User role', example: 'user', required: true },
-  }
+// In responses/mapping.ts
+export const UserResponseMapping: Record<string, ResponseFieldConfig> = {
+  name: { description: 'User full name', example: 'John Doe', required: true },
+  email: { description: 'User email', example: 'john@example.com', required: true },
+  age: { description: 'User age', example: 25, required: false },
+  role: { description: 'User role', example: 'user', required: true },
 };
 
 // Usage - automatic mapping! No constructor needed!
@@ -443,7 +436,7 @@ SwaggerModule.setup('api/docs', app, document);
 - Field decorators include Swagger metadata
 - Controller decorators include operation descriptions
 - Response DTOs define response schemas
-- Centralized configuration in `field-mappings.ts` and `response-mappings.ts`
+- Per-module mappings in `dto/mapping.ts` and `responses/mapping.ts`
 
 ### 9. Entity & Repository Pattern
 
@@ -614,13 +607,34 @@ export class Product {
 
 **That's it! No constructor needed.**
 
-#### Step 2: Create Input DTOs
+#### Step 2: Create Mappings
+**File:** `modules/[feature]/dto/mapping.ts`
+```typescript
+import { StringField, NumberField } from '../../../common/decorators/field.decorator';
+
+export const CreateProductMapping = {
+  name: () => StringField('Product name', 'Laptop', true),
+  description: () => StringField('Product description', 'High-performance laptop', false),
+  price: () => NumberField('Product price', 999.99, true, 0.01),
+  category: () => StringField('Product category', 'Electronics', true),
+};
+
+export const UpdateProductMapping = {
+  name: () => StringField('Product name', 'Laptop', false),
+  description: () => StringField('Product description', 'High-performance laptop', false),
+  price: () => NumberField('Product price', 999.99, false, 0.01),
+  category: () => StringField('Product category', 'Electronics', false),
+};
+```
+
+#### Step 3: Create Input DTOs
 **File:** `modules/[feature]/dto/create-[feature].dto.ts`
 ```typescript
 import { BaseCreateDto } from '../../../common/base/base-dto';
 import { AutoApplyDecorators } from '../../../common/decorators/auto-apply.decorator';
+import { CreateProductMapping } from './mapping';
 
-@AutoApplyDecorators('CreateProductDto')
+@AutoApplyDecorators(CreateProductMapping)
 export class CreateProductDto extends BaseCreateDto {
   name: string;
   description?: string;
@@ -633,8 +647,9 @@ export class CreateProductDto extends BaseCreateDto {
 ```typescript
 import { BaseUpdateDto } from '../../../common/base/base-dto';
 import { AutoApplyDecorators } from '../../../common/decorators/auto-apply.decorator';
+import { UpdateProductMapping } from './mapping';
 
-@AutoApplyDecorators('UpdateProductDto')
+@AutoApplyDecorators(UpdateProductMapping)
 export class UpdateProductDto extends BaseUpdateDto {
   name?: string;
   description?: string;
@@ -643,13 +658,27 @@ export class UpdateProductDto extends BaseUpdateDto {
 }
 ```
 
-#### Step 3: Create Response DTOs
+#### Step 4: Create Response Mappings
+**File:** `modules/[feature]/responses/mapping.ts`
+```typescript
+import { ResponseFieldConfig } from '../../../common/decorators/auto-response.decorator';
+
+export const ProductResponseMapping: Record<string, ResponseFieldConfig> = {
+  name: { description: 'Product name', example: 'Laptop', required: true },
+  description: { description: 'Product description', example: 'High-performance laptop', required: false },
+  price: { description: 'Product price', example: 999.99, required: true },
+  category: { description: 'Product category', example: 'Electronics', required: true },
+};
+```
+
+#### Step 5: Create Response DTOs
 **File:** `modules/[feature]/responses/[feature]-response.dto.ts`
 ```typescript
 import { BaseResponseDto } from '../../../common/base/base-dto';
 import { AutoResponse } from '../../../common/decorators/auto-response.decorator';
+import { ProductResponseMapping } from './mapping';
 
-@AutoResponse('ProductResponseDto')
+@AutoResponse(ProductResponseMapping)
 export class ProductResponseDto extends BaseResponseDto {
   name: string;
   description?: string;
@@ -672,43 +701,7 @@ export class ProductListResponseDto extends BaseListResponseDto<ProductResponseD
 
 **That's it! No constructor boilerplate needed.**
 
-#### Step 4: Add Configuration Mappings
-**File:** `common/config/field-mappings.ts`
-```typescript
-export const FIELD_MAPPINGS = {
-  // ... existing mappings
-  
-  CreateProductDto: {
-    name: () => StringField('Product name', 'Laptop', true),
-    description: () => StringField('Product description', 'High-performance laptop', false),
-    price: () => NumberField('Product price', 999.99, true, 0.01),
-    category: () => StringField('Product category', 'Electronics', true),
-  },
-  
-  UpdateProductDto: {
-    name: () => StringField('Product name', 'Laptop', false),
-    description: () => StringField('Product description', 'High-performance laptop', false),
-    price: () => NumberField('Product price', 999.99, false, 0.01),
-    category: () => StringField('Product category', 'Electronics', false),
-  },
-};
-```
-
-**File:** `common/config/response-mappings.ts`
-```typescript
-export const RESPONSE_MAPPINGS = {
-  // ... existing mappings
-  
-  ProductResponseDto: {
-    name: { description: 'Product name', example: 'Laptop', required: true },
-    description: { description: 'Product description', example: 'High-performance laptop', required: false },
-    price: { description: 'Product price', example: 999.99, required: true },
-    category: { description: 'Product category', example: 'Electronics', required: true },
-  },
-};
-```
-
-#### Step 5: Create Service
+#### Step 6: Create Service
 **File:** `modules/[feature]/[feature].service.ts`
 ```typescript
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
@@ -779,7 +772,7 @@ export class ProductsService {
 }
 ```
 
-#### Step 6: Create Controller
+#### Step 7: Create Controller
 **File:** `modules/[feature]/[feature].controller.ts`
 ```typescript
 import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
@@ -838,7 +831,7 @@ export class ProductsController extends BaseController<
 }
 ```
 
-#### Step 7: Create Module
+#### Step 8: Create Module
 **File:** `modules/[feature]/[feature].module.ts`
 ```typescript
 import { Module } from '@nestjs/common';
@@ -856,7 +849,7 @@ import { Product } from './entities/product.entity';
 export class ProductsModule {}
 ```
 
-#### Step 8: Register Module
+#### Step 9: Register Module
 **File:** `app.module.ts`
 ```typescript
 import { ProductsModule } from './modules/products/products.module';
@@ -870,7 +863,7 @@ import { ProductsModule } from './modules/products/products.module';
 export class AppModule {}
 ```
 
-#### Step 9: Test
+#### Step 10: Test
 1. Run the app: `npm run start:dev`
 2. Open Swagger: `http://localhost:3000/api/docs`
 3. Test all CRUD endpoints
@@ -879,10 +872,10 @@ export class AppModule {}
 
 **You wrote:**
 - Entity: Just properties + `@AutoEntity()` decorator
-- DTOs: Just properties + `@AutoApplyDecorators()` decorator
-- Response: Just properties + `@AutoResponse()` decorator
+- DTOs: Just properties + `@AutoApplyDecorators(mapping)` decorator
+- Response: Just properties + `@AutoResponse(mapping)` decorator
 - List Response: Empty class extending `BaseListResponseDto<T>` (no constructor!)
-- Configuration: Simple mapping objects
+- Mappings: Simple objects in `dto/mapping.ts` and `responses/mapping.ts`
 - Service: Business logic only
 - Controller: Endpoint definitions using base class
 
@@ -926,9 +919,9 @@ export class AppModule {}
 
 **Use Decorators for Everything:**
 ✅ Use `@AutoEntity()` on all entities - no manual constructors  
-✅ Use `@AutoApplyDecorators()` or `@AutoResponse()` for all DTOs  
+✅ Use `@AutoApplyDecorators(mapping)` and `@AutoResponse(mapping)` for all DTOs  
 ✅ List response DTOs: Just extend `BaseListResponseDto<T>` - empty class, no constructor!  
-✅ Define configuration once in `field-mappings.ts` and `response-mappings.ts`  
+✅ Define mappings per-module in `dto/mapping.ts` and `responses/mapping.ts`  
 
 **Architecture Patterns:**
 ✅ Extend BaseController for standard CRUD operations  
@@ -1021,15 +1014,15 @@ export class User {
   email: string;
 }
 
-// 2. Input DTOs - Validation from config
-@AutoApplyDecorators('CreateUserDto')
+// 2. Input DTOs - Validation from mapping
+@AutoApplyDecorators(CreateUserMapping)
 export class CreateUserDto extends BaseCreateDto {
   name: string;
   email: string;
 }
 
 // 3. Response DTOs - Auto-mapping + Swagger
-@AutoResponse('UserResponseDto')
+@AutoResponse(UserResponseMapping)
 export class UserResponseDto extends BaseResponseDto {
   name: string;
   email: string;
@@ -1126,27 +1119,33 @@ const document = SwaggerModule.createDocument(app, config);
 SwaggerModule.setup('api/docs', app, document);
 ```
 
-### Configuration Files
+### Module Mappings (Per-Module Approach)
 
-**Field Mappings:** `common/config/field-mappings.ts`
+**Field Mappings:** `modules/[feature]/dto/mapping.ts`
 ```typescript
-export const FIELD_MAPPINGS = {
-  CreateUserDto: {
-    name: () => StringField('User name', 'John Doe'),
-    email: () => EmailField('User email', 'john@example.com'),
-  }
+import { StringField, EmailField } from '../../../common/decorators/field.decorator';
+
+export const CreateUserMapping = {
+  name: () => StringField('User name', 'John Doe'),
+  email: () => EmailField('User email', 'john@example.com'),
 };
 ```
 
-**Response Mappings:** `common/config/response-mappings.ts`
+**Response Mappings:** `modules/[feature]/responses/mapping.ts`
 ```typescript
-export const RESPONSE_MAPPINGS = {
-  UserResponseDto: {
-    name: { description: 'User name', example: 'John Doe', required: true },
-    email: { description: 'User email', example: 'john@example.com', required: true },
-  }
+import { ResponseFieldConfig } from '../../../common/decorators/auto-response.decorator';
+
+export const UserResponseMapping: Record<string, ResponseFieldConfig> = {
+  name: { description: 'User name', example: 'John Doe', required: true },
+  email: { description: 'User email', example: 'john@example.com', required: true },
 };
 ```
+
+✅ **Benefits of per-module mappings:**
+- Better modularity - each module owns its configuration
+- Type-safe - pass objects, not strings
+- Easier to refactor - no centralized coupling
+- Clear dependencies - imports show relationships
 
 ## Common Patterns
 

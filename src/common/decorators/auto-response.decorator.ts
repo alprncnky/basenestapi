@@ -1,17 +1,23 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { RESPONSE_MAPPINGS } from '../config/response-mappings';
 
 /**
- * Decorator that automatically applies Swagger documentation and mapping from centralized configuration
- * Usage: @AutoResponse('UserResponseDto')
+ * Response field configuration interface
+ */
+export interface ResponseFieldConfig {
+  description: string;
+  example: any;
+  required: boolean;
+}
+
+/**
+ * Decorator that automatically applies Swagger documentation and mapping from mapping object
+ * Usage: @AutoResponse(UserResponseMapping)
  * 
- * Configuration must be defined in common/config/response-mappings.ts
+ * Mapping should be defined in the module's responses/mapping.ts file
  * Also adds automatic constructor for entity-to-DTO mapping
  */
-export function AutoResponse(responseName: string) {
+export function AutoResponse(responseMappings: Record<string, ResponseFieldConfig>) {
   return function <T extends { new (...args: any[]): {} }>(constructor: T) {
-    const responseMappings = RESPONSE_MAPPINGS[responseName];
-    
     if (responseMappings) {
       // Apply Swagger decorators based on configuration
       for (const [propertyKey, config] of Object.entries(responseMappings)) {
@@ -22,7 +28,7 @@ export function AutoResponse(responseName: string) {
         })(constructor.prototype, propertyKey);
       }
     } else {
-      console.warn(`No response mappings found for ${responseName} in RESPONSE_MAPPINGS`);
+      console.warn(`No response mappings provided to @AutoResponse`);
     }
 
     // Return enhanced class with automatic mapping constructor
@@ -33,7 +39,6 @@ export function AutoResponse(responseName: string) {
           Object.assign(this, args[0]);
         }
       }
-    };
+    } as T;
   };
 }
-

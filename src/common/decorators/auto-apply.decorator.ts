@@ -1,17 +1,13 @@
-import { FIELD_MAPPINGS } from '../config/field-mappings';
-
 /**
- * Decorator that automatically applies field decorators from centralized configuration
- * Usage: @AutoApplyDecorators('CreateUserDto')
+ * Decorator that automatically applies field decorators from mapping object
+ * Usage: @AutoApplyDecorators(CreateUserMapping)
  * 
- * Configuration must be defined in common/config/field-mappings.ts
+ * Mapping should be defined in the module's dto/mapping.ts file
  */
-export function AutoApplyDecorators(dtoName: string) {
+export function AutoApplyDecorators(fieldMappings: Record<string, () => PropertyDecorator>) {
   return function (target: any) {
-    const fieldMappings = FIELD_MAPPINGS[dtoName];
-    
     if (!fieldMappings) {
-      console.warn(`No field mappings found for ${dtoName} in FIELD_MAPPINGS`);
+      console.warn(`No field mappings provided to @AutoApplyDecorators`);
       return target;
     }
 
