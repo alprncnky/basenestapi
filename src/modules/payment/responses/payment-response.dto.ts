@@ -1,6 +1,6 @@
 import { BaseResponseDto } from '../../../common/base/base-dto';
 import { AutoResponse } from '../../../common/decorators/auto-response.decorator';
-import { PaymentStatus } from '../entities/payment.entity';
+import { PaymentStatusType } from '../enums/payment-status.enum';
 import { PaymentResponseMapping } from './mapping';
 
 /**
@@ -11,7 +11,7 @@ import { PaymentResponseMapping } from './mapping';
 export class PaymentResponseDto extends BaseResponseDto {
   amount: number;
   currency: string;
-  status: PaymentStatus;
+  status: PaymentStatusType;
   customerEmail: string;
   customerName: string;
   description?: string;

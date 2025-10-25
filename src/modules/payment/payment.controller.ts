@@ -10,7 +10,8 @@ import {
   DeleteEndpoint,
 } from '../../common/decorators/endpoint.decorator';
 import { PaymentService } from './payment.service';
-import { Payment, PaymentStatus } from './entities/payment.entity';
+import { Payment } from './entities/payment.entity';
+import { PaymentStatusType } from './enums/payment-status.enum';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { PaymentResponseDto } from './responses/payment-response.dto';
@@ -51,10 +52,10 @@ export class PaymentController extends BaseController<
   }
 
   @GetAllEndpoint('Payment', PaymentListResponseDto)
-  @ApiQuery({ name: 'status', required: false, enum: PaymentStatus, description: 'Filter by payment status' })
+  @ApiQuery({ name: 'status', required: false, enum: PaymentStatusType, description: 'Filter by payment status' })
   @ApiQuery({ name: 'email', required: false, type: 'string', description: 'Filter by customer email' })
   async findAll(
-    @Query('status') status?: PaymentStatus,
+    @Query('status') status?: PaymentStatusType,
     @Query('email') email?: string,
   ) {
     let payments: Payment[];
@@ -125,13 +126,13 @@ export class PaymentController extends BaseController<
 
   @Get('status/:status')
   @ApiOperation({ summary: 'Get payments by status' })
-  @ApiParam({ name: 'status', enum: PaymentStatus, description: 'Payment status' })
+  @ApiParam({ name: 'status', enum: PaymentStatusType, description: 'Payment status' })
   @ApiResponse({
     status: 200,
     description: 'List of payments with specified status',
     type: PaymentListResponseDto,
   })
-  async findByStatus(@Param('status') status: PaymentStatus): Promise<PaymentListResponseDto> {
+  async findByStatus(@Param('status') status: PaymentStatusType): Promise<PaymentListResponseDto> {
     const payments = await this.paymentService.findByStatus(status);
     const responseItems = payments.map((payment) => new PaymentResponseDto(payment));
     return new PaymentListResponseDto(responseItems, payments.length);

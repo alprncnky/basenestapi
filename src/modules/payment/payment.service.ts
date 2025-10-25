@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { Payment, PaymentStatus } from './entities/payment.entity';
+import { Payment } from './entities/payment.entity';
+import { PaymentStatusType } from './enums/payment-status.enum';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { IBaseService } from '../../common/interfaces/base-service.interface';
@@ -30,7 +31,7 @@ export class PaymentService implements IBaseService<Payment> {
     const payment: Payment = {
       id: this.idCounter++,
       ...createPaymentDto,
-      status: PaymentStatus.PENDING,
+      status: PaymentStatusType.PENDING,
       transactionId,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -65,7 +66,7 @@ export class PaymentService implements IBaseService<Payment> {
   /**
    * Find payments by status
    */
-  async findByStatus(status: PaymentStatus): Promise<Payment[]> {
+  async findByStatus(status: PaymentStatusType): Promise<Payment[]> {
     return this.payments.filter((p) => p.status === status);
   }
 
@@ -84,7 +85,7 @@ export class PaymentService implements IBaseService<Payment> {
 
     // Validate status transition if status is being updated
     if (updatePaymentDto.status) {
-      this.validateStatusTransition(payment.status, updatePaymentDto.status as PaymentStatus);
+      this.validateStatusTransition(payment.status, updatePaymentDto.status as PaymentStatusType);
     }
 
     // Prepare update data with proper type casting
@@ -94,7 +95,7 @@ export class PaymentService implements IBaseService<Payment> {
     const updatedPayment: Payment = {
       ...payment,
       ...otherUpdates,
-      ...(status && { status: status as PaymentStatus }),
+      ...(status && { status: status as PaymentStatusType }),
       updatedAt: new Date(),
     };
 
@@ -112,7 +113,7 @@ export class PaymentService implements IBaseService<Payment> {
     const payment = await this.findOne(id);
     
     // Business rule: cannot delete completed or refunded payments
-    if (payment.status === PaymentStatus.COMPLETED || payment.status === PaymentStatus.REFUNDED) {
+    if (payment.status === PaymentStatusType.COMPLETED || payment.status === PaymentStatusType.REFUNDED) {
       throw new BadRequestException(`Cannot delete ${payment.status} payments`);
     }
 
@@ -126,7 +127,7 @@ export class PaymentService implements IBaseService<Payment> {
   async processPayment(id: number): Promise<Payment> {
     const payment = await this.findOne(id);
 
-    if (payment.status !== PaymentStatus.PENDING) {
+    if (payment.status !== PaymentStatusType.PENDING) {
       throw new BadRequestException(`Payment with ID ${id} is not in pending status`);
     }
 
@@ -135,7 +136,7 @@ export class PaymentService implements IBaseService<Payment> {
 
     const updatedPayment: Payment = {
       ...payment,
-      status: success ? PaymentStatus.COMPLETED : PaymentStatus.FAILED,
+      status: success ? PaymentStatusType.COMPLETED : PaymentStatusType.FAILED,
       updatedAt: new Date(),
     };
 
@@ -151,13 +152,13 @@ export class PaymentService implements IBaseService<Payment> {
   async refundPayment(id: number): Promise<Payment> {
     const payment = await this.findOne(id);
 
-    if (payment.status !== PaymentStatus.COMPLETED) {
+    if (payment.status !== PaymentStatusType.COMPLETED) {
       throw new BadRequestException(`Can only refund completed payments`);
     }
 
     const updatedPayment: Payment = {
       ...payment,
-      status: PaymentStatus.REFUNDED,
+      status: PaymentStatusType.REFUNDED,
       updatedAt: new Date(),
     };
 
@@ -183,12 +184,12 @@ export class PaymentService implements IBaseService<Payment> {
     }
   }
 
-  private validateStatusTransition(currentStatus: PaymentStatus, newStatus: PaymentStatus): void {
-    const validTransitions: Record<PaymentStatus, PaymentStatus[]> = {
-      [PaymentStatus.PENDING]: [PaymentStatus.COMPLETED, PaymentStatus.FAILED],
-      [PaymentStatus.COMPLETED]: [PaymentStatus.REFUNDED],
-      [PaymentStatus.FAILED]: [],
-      [PaymentStatus.REFUNDED]: [],
+  private validateStatusTransition(currentStatus: PaymentStatusType, newStatus: PaymentStatusType): void {
+    const validTransitions: Record<PaymentStatusType, PaymentStatusType[]> = {
+      [PaymentStatusType.PENDING]: [PaymentStatusType.COMPLETED, PaymentStatusType.FAILED],
+      [PaymentStatusType.COMPLETED]: [PaymentStatusType.REFUNDED],
+      [PaymentStatusType.FAILED]: [],
+      [PaymentStatusType.REFUNDED]: [],
     };
 
     const allowedStatuses = validTransitions[currentStatus] || [];
